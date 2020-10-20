@@ -48,3 +48,59 @@ class ReplayBuffer:
         # return a sample of size B
         batch = random.sample(self.buffer, size)
         return list(map(torch.FloatTensor, zip(*batch)))
+
+
+def appendOnes(tensor):
+    '''
+    Example
+    a = torch.randn([3,3])
+    b = torch.ones([3,1])
+    torch.cat([b,a],1)
+    Out[1]:
+    tensor([[ 1.0000,  1.3271,  0.9431,  0.2787],
+        [ 1.0000, -0.1420,  0.6311, -1.3694],
+        [ 1.0000, -1.3565, -0.5244, -0.5571]])
+    :param tensor: input tensor to append 1's
+    :return: tensor appended with 1's
+    '''
+    c = tensor.size()
+    tensor = tensor.reshape(-1, c[-1])
+    b = torch.ones([tensor.size()[0], 1])
+    tensor = torch.cat([b, tensor], 1)
+    q = list(c[:-1])
+    q.append(c[-1] + 1)
+    tensor = tensor.reshape(q)
+    return tensor
+
+
+def SGD(parameters, gradients, learning_rate):
+    # TODO : implement momentum
+    with torch.no_grad():
+        parameters.data -= learning_rate * gradients
+    return parameters
+
+
+def MeanSquarredError(**kwargs):
+    labels, targets, batch_size = kwargs['labels'], kwargs['targets'], kwargs['batch_size']
+    return torch.sum(torch.mul((labels - targets), (labels - targets))) / batch_size
+
+
+def kaiming_initialization(x, mode='out'):
+    '''
+
+    :param x: tensor
+    :param mode: in or out
+    Mode 'out' preserves variance of outputs in the forward pass
+    Mode 'in' preserves variance of gradients in backward pass
+    :return: tensor updated with initialization scheme
+    '''
+
+    # TODO : update for high rank tensors
+    if len(x.size()) == 2:
+        a, b = x.size()
+    if len(x.size()) == 1:
+        a = b = x.size()[0]
+    if mode == 'out':
+        x.data = x.data * math.sqrt(2 / a)
+    else:
+        x.data = x.data * math.sqrt(2 / b)

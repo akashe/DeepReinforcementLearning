@@ -4,7 +4,7 @@ import torch
 import gym
 import torch.nn.functional as F
 from torch.distributions.normal import Normal
-from .RLUtils import freeze_network,unfreeze_network,create_network,forward,ReplayBuffer
+from RLUtils import freeze_network,unfreeze_network,create_network,forward,ReplayBuffer
 
 '''
 Current implementation will not work with CNN's as Qnetwork or Pnetwork

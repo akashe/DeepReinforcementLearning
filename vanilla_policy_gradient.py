@@ -2,7 +2,7 @@ import time
 
 import gym
 import torch
-from TorchFunctions.dataInitialization import kaiming_initialization
+from RLUtils import kaiming_initialization
 import torch.nn.functional as F
 from torch.distributions.categorical import Categorical
 

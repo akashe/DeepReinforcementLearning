@@ -1,9 +1,10 @@
 import collections
 
 import torch
-from CostFunctions.MeanSquarredError import MeanSquarredError
-from Optimizers.SGD import SGD
-from TorchFunctions.dataModifications import appendOnes
+
+from RLUtils import MeanSquarredError
+from RLUtils import SGD
+from RLUtils import appendOnes
 import gym
 import random
 import time
