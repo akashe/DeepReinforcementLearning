@@ -2,6 +2,8 @@ import torch
 import random
 import collections
 import torch.nn.functional as F
+import math
+import torch.nn as nn
 
 
 def freeze_network(network):
@@ -25,15 +27,26 @@ def forward(network, input_):
     return input_
 
 
-def create_network(dims):
+def create_network(dims,activation=F.relu):
     network = []
     for i, j in enumerate(dims):
         if i != len(dims) - 1:
             network.append(torch.randn([dims[i], dims[i + 1]], requires_grad=True))
             if i < len(dims) - 2:
-                network.append(F.relu_)
+                network.append(activation)
 
     return network
+
+
+def create_network_with_nn(dims,activation=nn.ReLU()): # Have to put nn.ReLU() not nn.ReLU
+    network = []
+    for i, j in enumerate(dims):
+        if i != len(dims) - 1:
+            network.append(nn.Linear(dims[i], dims[i + 1]))
+            if i < len(dims) - 2:
+                network.append(activation)
+
+    return nn.Sequential(*network)
 
 
 class ReplayBuffer:

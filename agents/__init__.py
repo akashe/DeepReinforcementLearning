@@ -1,2 +1,2 @@
-from .Agent import Agent
-from .MLPAgent import MLPAgent
+from .agent import Agent
+from .ActorCriticAgents import *

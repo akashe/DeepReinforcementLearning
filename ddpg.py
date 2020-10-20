@@ -194,7 +194,7 @@ def main():
             agent.ReplayBuffer(observation, action, reward, next_observation, done)
             observation = next_observation
 
-            if j % update_every == 0 and total_steps > update_after:
+            if total_steps % update_every == 0 and total_steps > update_after:
                 for k in range(no_of_updates):
                     batch = agent.ReplayBuffer.sample(batch_size)
                     agent.UpdateQ(batch)
