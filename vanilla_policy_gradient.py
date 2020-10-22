@@ -2,7 +2,6 @@ import time
 
 import gym
 import torch
-from RLUtils import kaiming_initialization
 import torch.nn.functional as F
 from torch.distributions.categorical import Categorical
 
@@ -40,6 +39,10 @@ I am not all using policy gradient theorem here.
 I AM SERIOUSLY DISCOURAGED. I thought of implementing policy gradients using derivative of log probs
 but didn't understand how to do that. So I looked around different implementations and found that they
 have converted the problem to a supervised one. Maximizing the log likelihoods  instead of proper gradients
+I WAS WRONG ABOVE. I DIDN'T understand it right. The derivative of line 105 is 
+..math::
+ \nabla_\theta \ln_\pi(s,a)*\text{advantage_fucntion} 
+which is the true policy gradient.
 v1: discrete action space
 v2: calculate actual gradients
 '''
@@ -60,7 +63,7 @@ class Vpg:
         network = []
         for i, j in enumerate(dims):
             if i != len(dims) - 1:
-                network.append(kaiming_initialization(torch.randn([dims[i], dims[i + 1]])))
+                network.append(torch.randn([dims[i], dims[i + 1]]))
                 if i < len(dims) - 2:
                     network.append(F.relu_)
         if end:
@@ -96,12 +99,14 @@ class Vpg:
 
     def compute_policy_loss(self, observation, action, rewards):
         policy = self.get_policy(observation)
-        value_fn = self.get_value_function(observation)
+        with torch.no_grad():
+            value_fn = self.get_value_function(observation)
         action = torch.FloatTensor(action)
         rewards = torch.FloatTensor(rewards)
         log_probabilities = policy.log_prob(action)
         advantage_fn = rewards - value_fn
-        return -log_probabilities * advantage_fn  # taking negative log likelihood rather than policy gradients
+        return -log_probabilities * advantage_fn  # taking negative log likelihood rather than policy gradients# Wrong this isn't neg loglikelihood
+        #check above for reasoning
 
     def compute_value_loss(self, observation, rewards):
         value_fn = self.get_value_function(observation)
@@ -128,7 +133,7 @@ def get_rewards_to_go(rewards):
 
 
 def main():
-    games = 2000
+    games = 5000
     test_games = 10
     D = 5
     env = gym.make('LunarLander-v2')
@@ -191,6 +196,7 @@ def main():
             time.sleep(1e-3)
             action = agent.get_action(observation)
             observation, r, done, _ = env.step(action)
+            # env.close()
 
 
 if __name__ == '__main__':

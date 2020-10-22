@@ -51,7 +51,7 @@ class TD3Agent(Agent, ABC):
         self.q2_target = deepcopy(self.q2_current)  # target network of second q-value function
         self.p_current = PolicyNetwork(PolicyNetworkDims)  # policy function
         self.p_target = deepcopy(self.p_current)  # target policy function
-
+        #TODO: make better class docs ..move all the info to @params
         self.ReplayBuffer = ReplayBuffer(buffer_size)
         self.polyak = polyak # Averaging factor
         self.discount_factor = discount_factor # discount factor for future rewards

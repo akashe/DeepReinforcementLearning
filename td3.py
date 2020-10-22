@@ -8,7 +8,8 @@ import torch
 Idea: to implement td3: twin delayed deep deterministic policy gradient using only pytorch and not
 my library
 Experiment and result:
-1) there is a clear difference in speed bw nn.Sequential and my create_networks
+1) there is a clear difference in speed bw nn.Sequential and my create_networks()
+2) getting the right hyperparams is tough
 '''
 
 
@@ -23,25 +24,26 @@ def td3():
     # 0.5 here since a_low and a_high in MountainCarContinuous is -1 and +1
 
     # Training variables
-    epochs = 100
+    epochs = 20000
     max_steps_per_episode = 1000
-    random_actions_till = 15000
+    random_actions_till = 150000
     policy_delay = 3
     update_every = 50
-    update_after = 10000
-    batch_size = 100
-    buffer_size = 10000
-    polyak = 0.995
-    PolicyNetworkDims = [observation_space, 100, action_space]
-    QNetworkDims = [observation_space + action_space, 150, 1]
-    add_noise_till = 100000
+    update_after = 160000
+    batch_size = 1000
+    buffer_size = 100000
+    # polyak = 0.995
+    polyak = 0.8
+    PolicyNetworkDims = [observation_space, 30,15, action_space]
+    QNetworkDims = [observation_space + action_space, 30,15, 1]
+    add_noise_till = 10000000
     discount_factor = 0.9
     q_lr = 0.001
     p_lr = 0.001
     no_of_updates = 5
     test_epochs = 1
     test_steps = 1500
-    test_after = 90
+    test_after = 19990
 
     agent = TD3Agent(PolicyNetworkDims, QNetworkDims, action_space_high, action_space_low, buffer_size,
                      polyak, add_noise_till, discount_factor, q_lr, p_lr, noise_clip)
@@ -61,7 +63,7 @@ def td3():
             agent.ReplayBuffer(observation, action, reward, new_observation, done)  # Save the experience
             observation = new_observation
 
-            if total_steps % update_every == 0 and total_steps > update_after:  # update parameters after agent has explored enough by taking random actions
+            if  total_steps > update_after and total_steps % update_every == 0:  # update parameters after agent has explored enough by taking random actions
                 for k in range(no_of_updates):
                     batch = agent.ReplayBuffer.sample(batch_size)  # sample from replay memory
                     agent.updateQ(batch)
@@ -72,7 +74,7 @@ def td3():
             j += 1
             total_steps += 1
         env.close()
-        print("total steps after epoch {} -> {}".format(i,total_steps))
+        # print("total steps after epoch {} -> {}".format(i,total_steps))
 
         if i > test_after:  # Test agent after certain number of training epochs
             for i_ in range(test_epochs):  # Run test by visualizing TODO: use reward instead of visualization
