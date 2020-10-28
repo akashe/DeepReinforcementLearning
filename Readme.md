@@ -1,13 +1,12 @@
-Things to do In Reinforcement Learning
+###Deep RL algorithms implemented using Pytorch
 
-Implement these algos:
+#### Algo list:
+1. DQN 
+2. Vanilla policy Gradient
+3. Deep Deterministic Policy Gradient
+4. Twin Delayed Deep Deterministic Policy Gradient
+5. Soft Actor Critic
+6. Trust Region Policy Optimization - Currently working
+7. Proximal Policy Optimization - to be done
 
-
-All algos mentioned in spinningup  
-DQN, Reinforce  
-check results on different envs lunar lander coz I like it
-and Cart Pole, Mountain Car, Bit Flipping Fetch Reach
-Proper plotting of results
-
-Quickly implement 2 papers to see how quickly can I implement papers
-Summary of things that became clear 
+TODO: Benchmarking of these algorithms on CartPole and Mountain Car

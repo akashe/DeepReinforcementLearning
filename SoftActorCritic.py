@@ -20,8 +20,8 @@ def sac():
     observation_space = env.observation_space.shape[0]
 
     # Hyperparams
-    epochs = 400
-    max_steps_per_episode = 1000
+    epochs = 4000
+    max_steps_per_episode = 400
     random_actions_till = 100000
     update_every = 50
     update_after = 125000
