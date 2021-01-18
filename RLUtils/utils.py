@@ -76,13 +76,10 @@ def appendOnes(tensor):
     :param tensor: input tensor to append 1's
     :return: tensor appended with 1's
     '''
-    c = tensor.size()
-    tensor = tensor.reshape(-1, c[-1])
-    b = torch.ones([tensor.size()[0], 1])
+    c = tensor.shape
+    assert len(c) == 2
+    b = torch.ones([c[0], 1])
     tensor = torch.cat([b, tensor], 1)
-    q = list(c[:-1])
-    q.append(c[-1] + 1)
-    tensor = tensor.reshape(q)
     return tensor
 
 
