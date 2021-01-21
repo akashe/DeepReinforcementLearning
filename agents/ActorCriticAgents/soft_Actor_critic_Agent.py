@@ -14,7 +14,7 @@ class NormalPolicyNetwork(nn.Module):
     def __init__(self,dims):
         super().__init__()
         assert len(dims) >= 3
-        self.p = create_network_with_nn(dims[:-2])
+        self.p = create_network_with_nn(dims[:-1])
         self.mu = nn.Linear(dims[-2],dims[-1])  # mean of the distribution
         self.std = nn.Linear(dims[-2],dims[-1]) # standard deviation of the distribution
 
@@ -123,7 +123,7 @@ class SAC_Agent(Agent):
             future_q2 = self.q2_target.forward(future_o_plus_a) # Q(s_,future_a) by q2 target network
 
             future_q = self.batch_min(future_q1,future_q2)
-            future_rewards = future_q - self.entropy_constant*entropy_sample
+            future_rewards = future_q - self.entropy_constant*entropy_sample[:,None]
 
             r,d,a = r[:,None],d[:,None],a[:,None] # increasing dimensions of rewards, done and action
             target = r + self.discount_factor*(1-d)*future_rewards

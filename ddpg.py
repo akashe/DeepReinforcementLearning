@@ -6,6 +6,9 @@ import torch.nn.functional as F
 from torch.distributions.normal import Normal
 from RLUtils import freeze_network,unfreeze_network,create_network,forward,ReplayBuffer
 
+from collections import deque
+import matplotlib.pyplot as plt
+
 '''
 Current implementation will not work with CNN's as Qnetwork or Pnetwork
 Mistakes:
@@ -169,7 +172,8 @@ def main():
     test_steps = 200
 
     # Environment
-    env = gym.make('MountainCarContinuous-v0')
+    env_name = "MountainCarContinuous-v0"
+    env = gym.make(env_name)
     action_space = env.action_space.shape[0]
     action_space_high = env.action_space.high
     action_space_low = env.action_space.low
@@ -180,17 +184,22 @@ def main():
                  observation_space, buffer_size, batch_size, polyak, add_noise_till, discount_factor, lr)
 
     total_steps = 0
+
+    rewards_list = []
+    score_deque = deque(maxlen=100)
     for i in range(epochs):
         observation = env.reset()
         done = False
         j = 0
-        print("Training epoch " + str(i))
+        game_reward = []
         while (not done) and j < max_steps_per_episode:
             if total_steps > random_actions_till:
                 action = agent.take_action(observation, total_steps)
             else:
                 action = torch.FloatTensor(env.action_space.sample())
             next_observation, reward, done, _ = env.step(action)
+            game_reward.append(reward)
+            score_deque.append(reward)
             agent.ReplayBuffer(observation, action, reward, next_observation, done)
             observation = next_observation
 
@@ -203,6 +212,18 @@ def main():
 
             j += 1
             total_steps += 1
+        avg_reward_this_game = sum(game_reward) / len(game_reward)
+        game_reward = []
+        rewards_list.append(avg_reward_this_game)
+        print(f'For game number {i}, mean of last 100 rewards = {sum(score_deque) / 100}')
+        env.close()
+
+    # Plotting avg rewards per game
+    plt.figure(figsize=(8, 6))
+    plt.title("Average reward of DDPG agent on Pendulum-v0 for each game")
+    plt.plot(range(len(rewards_list)), rewards_list)
+    plt.savefig("figures/DDPG_" + env_name + "_rewards.png")
+    plt.show()
 
     for i_ in range(test_epochs):
         with torch.no_grad():
