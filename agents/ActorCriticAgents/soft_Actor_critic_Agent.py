@@ -15,17 +15,17 @@ class NormalPolicyNetwork(nn.Module):
         super().__init__()
         assert len(dims) >= 3
         self.p = create_network_with_nn(dims[:-1]) # this would not have activations for the second last layers
-        self.mu = nn.Linear(dims[-2],dims[-1],bias=False)  # mean of the distribution
-        self.std = nn.Linear(dims[-2],dims[-1],bias=False) # standard deviation of the distribution
+        self.mu = nn.Linear(dims[-2],dims[-1])  # mean of the distribution
+        self.std = nn.Linear(dims[-2],dims[-1]) # standard deviation of the distribution
 
         self.act_limit = act_limit
 
-    def forward(self,o,deterministic=False,log_probs = False):
+    def forward(self,o,deterministic=False,log_probs = True):
         # log_probs is the term we use for entropy while updating P and Q
         o = torch.FloatTensor(o)
         o_ = self.p(o)
         mu = self.mu(o_)
-        clamped_std = torch.clamp(self.std(o_),-10,2) # clamping in a way that std doesnt have too huge value
+        clamped_std = torch.clamp(self.std(o_),-20,2) # clamping in a way that std doesnt have too huge value
         std = torch.exp(clamped_std)
         distribution = Normal(mu, std) # Distribution to sample actions from
 
@@ -150,19 +150,35 @@ class SAC_Agent(Agent):
         s,_,_,_,_ = batch
         # while updating policy we take the minimum of predictions of q1 and q2 and not (q1_target,q2_target)
 
+        for i in self.q1.parameters():
+            i.requires_grad = False
+        for i in self.q2.parameters():
+            i.requires_grad = False
+
         self.p_optim.zero_grad()
         action,entropy = self.policy.forward(s,log_probs=True)
-        future_s_a = torch.cat((s,action.detach()),dim=-1)
+        future_s_a = torch.cat((s,action),dim=-1)
 
-        with torch.no_grad():
-            q1_pred = self.q1.forward(future_s_a)
-            q2_pred = self.q2.forward(future_s_a)
+        q1_pred = self.q1.forward(future_s_a)
+        q2_pred = self.q2.forward(future_s_a)
 
-        q_pred = self.batch_min(q1_pred.detach(),q2_pred.detach())
+        q_pred = self.batch_min(q1_pred,q2_pred)
 
         p_loss = - (q_pred-self.entropy_constant*entropy).mean()
         p_loss.backward()
         self.p_optim.step()
+
+        for i in self.q1.parameters():
+            i.requires_grad = True
+        for i in self.q2.parameters():
+            i.requires_grad = True
+
+    def freeze_target_networks(self):
+        # target networks are updated using polyak and not gradients
+        for i in self.q1_target.parameters():
+            i.requires_grad = False
+        for i in self.q2_target.parameters():
+            i.requires_grad = False
 
     def updateNetworks(self):
         networks = [(self.q1,self.q1_target),(self.q2,self.q2_target)]

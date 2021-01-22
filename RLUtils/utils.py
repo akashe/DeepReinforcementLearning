@@ -49,6 +49,18 @@ def create_network_with_nn(dims,activation=nn.ReLU()): # Have to put nn.ReLU() n
     return nn.Sequential(*network)
 
 
+def create_network_end_activation(dims,activation=nn.ReLU(),output_activation=nn.Tanh()):
+    network = []
+    for i, j in enumerate(dims):
+        if i != len(dims) - 1:
+            network.append(nn.Linear(dims[i], dims[i + 1]))
+            if i < len(dims) - 2:
+                network.append(activation)
+    network.append(output_activation)
+
+    return nn.Sequential(*network)
+
+
 class ReplayBuffer:
     def __init__(self, buffer_size):
         self.buffer = collections.deque(maxlen=buffer_size)

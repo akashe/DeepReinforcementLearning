@@ -9,7 +9,8 @@ from collections import deque
 Idea: Implement a SAC agent for continuous task using pytorch.
 
 Results & Experiments:
-
+1) For Pendulum, it wasn't working initially but when I set max episodes as 200 then it started
+converging! It took much more time than DDPG to reach low rewards.
 '''
 
 
@@ -25,17 +26,17 @@ def sac():
 
     # Hyperparams
     epochs = 1000
-    max_steps_per_episode = 1000
-    random_actions_till = 15000
+    max_steps_per_episode = 200
+    random_actions_till = 10000
     update_every = 50
-    update_after = 15000
+    update_after = 1000
     batch_size = 100
     buffer_size = 10000
     polyak = 0.995
     discount_factor = 0.99 # Favouring immediate reward for this experiment
     q_lr = 0.0001
     p_lr = 0.0001
-    no_of_updates = 5
+    no_of_updates = 50
     test_epochs = 1
     test_steps = max_steps_per_episode
     test_after = int(epochs*0.99)
@@ -47,6 +48,8 @@ def sac():
 
     agent = SAC_Agent(PolicyNetworkDims,QNetworkDims,buffer_size,polyak,discount_factor,q_lr,p_lr,entropy_constant,action_limit)
 
+    # freeze target networks
+    agent.freeze_target_networks()
     total_steps = 0
     rewards_list = []
     score_deque = deque(maxlen=100)
@@ -66,14 +69,15 @@ def sac():
             agent.ReplayBuffer(observation,action,reward,new_observation,done)
             observation = new_observation
 
-            if total_steps > update_after and total_steps% update_every==0:
-                for k in range(no_of_updates):
-                    batch = agent.ReplayBuffer.sample(batch_size)
-                    agent.updateQ(batch)
-                    agent.updateP(batch)
-                    agent.updateNetworks()
             j += 1
             total_steps += 1
+        if total_steps > update_after and total_steps % update_every == 0:
+            for k in range(no_of_updates):
+                batch = agent.ReplayBuffer.sample(batch_size)
+                agent.updateQ(batch)
+                agent.updateP(batch)
+                agent.updateNetworks()
+
         avg_reward_this_game = sum(game_reward) / len(game_reward)
         rewards_list.append(avg_reward_this_game)
         print(f'For game number {i}, mean of last 100 rewards = {sum(score_deque) / 100}')
