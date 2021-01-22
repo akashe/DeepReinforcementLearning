@@ -4,10 +4,11 @@ import torch
 import gym
 import torch.nn.functional as F
 from torch.distributions.normal import Normal
-from RLUtils import freeze_network,unfreeze_network,create_network,forward,ReplayBuffer
+from RLUtils import create_network_with_nn,ReplayBuffer
 
 from collections import deque
 import matplotlib.pyplot as plt
+import torch.optim as optim
 
 '''
 Current implementation will not work with CNN's as Qnetwork or Pnetwork
@@ -22,14 +23,14 @@ class QNetwork:
     def __init__(self, qnetwork_mid_dims, action_space, observation_space):
         qnetwork_mid_dims.append(1)
         qnetwork_mid_dims.insert(0, action_space + observation_space)
-        self.target_network = create_network(qnetwork_mid_dims)
-        self.current_network = create_network(qnetwork_mid_dims)
+        self.target_network = create_network_with_nn(qnetwork_mid_dims)
+        self.current_network = create_network_with_nn(qnetwork_mid_dims)
 
     def __call__(self, network, input_):
         if network == "target":
-            return forward(self.target_network, input_)
+            return self.target_network(input_)
         if network == "current":
-            return forward(self.current_network, input_)
+            return self.current_network(input_)
 
 
 class PNetwork:
@@ -41,15 +42,15 @@ class PNetwork:
         self.observation_space = observation_space
         pnetwork_mid_dims.append(action_space)
         pnetwork_mid_dims.insert(0, observation_space)
-        self.PNetwork_target = create_network(pnetwork_mid_dims)
-        self.PNetwork_current = create_network(pnetwork_mid_dims)
+        self.PNetwork_target = create_network_with_nn(pnetwork_mid_dims)
+        self.PNetwork_current = create_network_with_nn(pnetwork_mid_dims)
         self.noise = Normal(0, 1)
         self.add_noise_till = add_noise_till
 
     def take_action(self, observation, total_steps):
         with torch.no_grad():
             observation = torch.FloatTensor(observation)
-            action = forward(self.PNetwork_current, observation)
+            action = self.PNetwork_current(observation)
             if total_steps <= self.add_noise_till:
                 noise = self.noise.sample()
                 action += noise
@@ -64,9 +65,9 @@ class PNetwork:
 
     def __call__(self, input_, network="current"):
         if network == "current":
-            return forward(self.PNetwork_current, input_)
+            return self.PNetwork_current(input_)
         if network == "target":
-            return forward(self.PNetwork_target, input_)
+            return self.PNetwork_target(input_)
 
 
 class DDPG:
@@ -80,6 +81,8 @@ class DDPG:
         self.polyak = polyak
         self.discount_factor = discount_factor
         self.lr = lr
+        self.QNetwork_current_optim = optim.Adam(self.QNetwork.current_network.parameters(),lr=lr)
+        self.PNetwork_current_optim = optim.Adam(self.PNetwork_.PNetwork_current.parameters(),lr=lr)
 
     def UpdateQ(self, batch):
         s, a, r, s_, d = batch
@@ -88,48 +91,21 @@ class DDPG:
             a_targets = self.PNetwork_(s_, "target")
             q_targets = self.QNetwork("target", torch.cat((s_, a_targets), -1))
             targets = r[:, None] + self.discount_factor * (1 - d)[:, None] * q_targets
+        self.QNetwork_current_optim.zero_grad()
         logits = self.QNetwork("current", torch.cat((s, a[:, None]), -1))
         loss_ = F.mse_loss(logits, targets)
         loss_.backward()
-        self.optim_step(self.QNetwork.current_network)
-        self.zero_grad([self.QNetwork.current_network])
-
-    def optim_step(self, network, max=False):
-        params_ = []
-        for i in network:
-            if torch.is_tensor(i) and i.requires_grad == True:
-                params_.append(i)
-        with torch.no_grad():
-            for i in params_:
-                if max:
-                    i.data += self.lr * i.grad
-                else:
-                    i.data -= self.lr * i.grad
-
-    def zero_grad(self, networks):
-        # Ideally I shud have model.get_trainable_params here
-        for j in networks:
-            for i in j:
-                if torch.is_tensor(i) and i.requires_grad == True:
-                    i.grad.data.zero_()
+        self.QNetwork_current_optim.step()
 
     def UpdateP(self, batch):
         s, _, _, _, _ = batch
+        self.QNetwork.current_network.eval()
+        self.PNetwork_current_optim.zero_grad()
         a = self.PNetwork_(s)
-        freeze_network(self.QNetwork.current_network)
-        '''
-        The thing is u don't need to freeze and unfreeze coz:
-        1) backward() will remove the CG graph associated with calculating gradients and wont let Pnetwork.current get gradients from QNetwork updates
-        2) we were zeroing gradients for self.QNetwork.current_network
-        
-        Freezing stops wastage of creating graph nodes and later zeroing the gradients
-        '''
-        cost_func_for_policy = torch.sum(self.QNetwork("current", torch.cat((s, a), -1))) / len(s)
+        cost_func_for_policy = -torch.sum(self.QNetwork("current", torch.cat((s, a), -1))) / len(s)
         cost_func_for_policy.backward()
-        self.optim_step(self.PNetwork_current, max=True)
-        networks = [self.PNetwork_current]
-        unfreeze_network(self.QNetwork.current_network)
-        self.zero_grad(networks)
+        self.PNetwork_current_optim.step()
+        self.QNetwork.current_network.train()
 
     def UpdateNetworks(self):
         with torch.no_grad():
@@ -154,25 +130,25 @@ class DDPG:
 
 def main():
     # arguments
-    epochs = 100
-    max_steps_per_episode = 1500
-    random_actions_till = 10000
+    epochs = 1000
+    max_steps_per_episode = 1000
+    random_actions_till = 1000
     update_every = 50
-    update_after = 1000
+    update_after = 15000
     batch_size = 100
     buffer_size = 10000
     polyak = 0.995
-    pnetwork_mid_dims = [100, 100]
-    qnetwork_mid_dims = [150, 100]
-    add_noise_till = 30000
+    pnetwork_mid_dims = [256,128,64]
+    qnetwork_mid_dims = [256,128,64]
+    add_noise_till = 100000
     discount_factor = 0.9
-    lr = 0.001
+    lr = 0.0001
     no_of_updates = 5
-    test_epochs = 1
+    test_epochs = int(epochs*0.01)
     test_steps = 200
 
     # Environment
-    env_name = "MountainCarContinuous-v0"
+    env_name = "Pendulum-v0" # "MountainCarContinuous-v0"
     env = gym.make(env_name)
     action_space = env.action_space.shape[0]
     action_space_high = env.action_space.high
@@ -220,7 +196,7 @@ def main():
 
     # Plotting avg rewards per game
     plt.figure(figsize=(8, 6))
-    plt.title("Average reward of DDPG agent on Pendulum-v0 for each game")
+    plt.title("Average reward of DDPG agent on"+env_name+"for each game")
     plt.plot(range(len(rewards_list)), rewards_list)
     plt.savefig("figures/DDPG_" + env_name + "_rewards.png")
     plt.show()

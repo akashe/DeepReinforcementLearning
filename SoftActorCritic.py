@@ -21,6 +21,7 @@ def sac():
     action_space_low = env.action_space.low
     action_space_high = env.action_space.high
     observation_space = env.observation_space.shape[0]
+    action_limit = env.action_space.high[0]
 
     # Hyperparams
     epochs = 1000
@@ -32,19 +33,19 @@ def sac():
     buffer_size = 10000
     polyak = 0.995
     discount_factor = 0.99 # Favouring immediate reward for this experiment
-    q_lr = 0.001
-    p_lr = 0.001
+    q_lr = 0.0001
+    p_lr = 0.0001
     no_of_updates = 5
     test_epochs = 1
     test_steps = max_steps_per_episode
     test_after = int(epochs*0.99)
-    entropy_constant = 0.5
+    entropy_constant = 0.9
 
     # Network Dims
     PolicyNetworkDims = [observation_space,256,128,64,action_space]
     QNetworkDims = [observation_space+action_space,256,128,64,1]
 
-    agent = SAC_Agent(PolicyNetworkDims,QNetworkDims,buffer_size,polyak,discount_factor,q_lr,p_lr,entropy_constant)
+    agent = SAC_Agent(PolicyNetworkDims,QNetworkDims,buffer_size,polyak,discount_factor,q_lr,p_lr,entropy_constant,action_limit)
 
     total_steps = 0
     rewards_list = []
@@ -74,7 +75,6 @@ def sac():
             j += 1
             total_steps += 1
         avg_reward_this_game = sum(game_reward) / len(game_reward)
-        game_reward = []
         rewards_list.append(avg_reward_this_game)
         print(f'For game number {i}, mean of last 100 rewards = {sum(score_deque) / 100}')
         env.close()
@@ -86,7 +86,7 @@ def sac():
                 j_ = 0
                 while (not done) and j_<test_steps:
                     env.render()
-                    action = agent.take_action(obs_,deterministic=True)
+                    action,_ = agent.take_action(obs_,deterministic=True)
                     obs_,_,done,_ = env.step(action)
                     j += 1
                 env.close()

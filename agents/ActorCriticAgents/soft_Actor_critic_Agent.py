@@ -11,12 +11,14 @@ from torch.optim import Adam
 
 
 class NormalPolicyNetwork(nn.Module):
-    def __init__(self,dims):
+    def __init__(self,dims,act_limit):
         super().__init__()
         assert len(dims) >= 3
-        self.p = create_network_with_nn(dims[:-1])
-        self.mu = nn.Linear(dims[-2],dims[-1])  # mean of the distribution
-        self.std = nn.Linear(dims[-2],dims[-1]) # standard deviation of the distribution
+        self.p = create_network_with_nn(dims[:-1]) # this would not have activations for the second last layers
+        self.mu = nn.Linear(dims[-2],dims[-1],bias=False)  # mean of the distribution
+        self.std = nn.Linear(dims[-2],dims[-1],bias=False) # standard deviation of the distribution
+
+        self.act_limit = act_limit
 
     def forward(self,o,deterministic=False,log_probs = False):
         # log_probs is the term we use for entropy while updating P and Q
@@ -42,8 +44,9 @@ class NormalPolicyNetwork(nn.Module):
             log_probs_ = None
 
         clamped_action = torch.tanh(action) # this results in clamping the action values while having all possible values from [-1,1]
+        scaled_action = self.act_limit*clamped_action
 
-        return clamped_action,log_probs_
+        return scaled_action,log_probs_
 
 
 class QNetwork(nn.Module):
@@ -82,10 +85,10 @@ class SAC_Agent(Agent):
     This changes the goal of a policy. Now policy has to maximize both reward and the entropy.
 
     '''
-    def __init__(self,PolicyNetworkDims,QNetworkDims,buffer_size,polyak,discount_factor,q_lr,p_lr,entropy_constant):
+    def __init__(self,PolicyNetworkDims,QNetworkDims,buffer_size,polyak,discount_factor,q_lr,p_lr,entropy_constant,act_limit):
         super(SAC_Agent, self).__init__()
         # An SAC agent has 1 policy network(no target policy network) and 2 q-value networks
-        self.policy = NormalPolicyNetwork(PolicyNetworkDims)
+        self.policy = NormalPolicyNetwork(PolicyNetworkDims,act_limit)
         self.q1 = QNetwork(QNetworkDims)
         self.q2 = deepcopy(self.q1)
         self.q1_target = deepcopy(self.q1)
@@ -129,11 +132,12 @@ class SAC_Agent(Agent):
             target = r + self.discount_factor*(1-d)*future_rewards
 
         # Updating q1
+        self.q1_optim.zero_grad()
         q1_prediction = self.q1.forward(torch.cat((s,a),dim=-1))
         q1_loss = F.mse_loss(target,q1_prediction)
         q1_loss.backward()
         self.q1_optim.step()
-        self.q1_optim.zero_grad()
+
 
         # Updating q2
         q2_prediction = self.q2.forward(torch.cat((s,a),dim=-1))
@@ -146,23 +150,24 @@ class SAC_Agent(Agent):
         s,_,_,_,_ = batch
         # while updating policy we take the minimum of predictions of q1 and q2 and not (q1_target,q2_target)
 
+        self.p_optim.zero_grad()
         action,entropy = self.policy.forward(s,log_probs=True)
-        future_s_a = torch.cat((s,action),dim=-1)
+        future_s_a = torch.cat((s,action.detach()),dim=-1)
 
         with torch.no_grad():
             q1_pred = self.q1.forward(future_s_a)
             q2_pred = self.q2.forward(future_s_a)
 
-        q_pred = self.batch_min(q1_pred,q2_pred)
+        q_pred = self.batch_min(q1_pred.detach(),q2_pred.detach())
 
-        p_loss = - (q_pred-entropy).mean()
+        p_loss = - (q_pred-self.entropy_constant*entropy).mean()
         p_loss.backward()
         self.p_optim.step()
-        self.p_optim.zero_grad()
 
     def updateNetworks(self):
         networks = [(self.q1,self.q1_target),(self.q2,self.q2_target)]
-        for i,j in networks:
-            for cur_params,tar_prams in zip(i.parameters(),j.parameters()):
-                tar_prams.data.mul_(self.polyak)
-                tar_prams.data.add_((1-self.polyak)*cur_params.data)
+        with torch.no_grad():
+            for i,j in networks:
+                for cur_params,tar_prams in zip(i.parameters(),j.parameters()):
+                    tar_prams.data.mul_(self.polyak)
+                    tar_prams.data.add_((1-self.polyak)*cur_params.data)
