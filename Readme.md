@@ -8,7 +8,9 @@
 5. [Soft Actor Critic](https://github.com/akashe/DeepReinforcementLearning/blob/main/SoftActorCritic.py)
 6. [Proximal Policy Optimization - CLIP](https://github.com/akashe/DeepReinforcementLearning/blob/main/ppo_clip.py)
 
-Experimental Results:
+###### Article on deeper Look into [policy gradients](https://akashe.io/blog/2020/10/14/policy-gradient-methods/) 
+
+#### Experimental Results:
 
 |Algorithm| Discrete Env: LunarLander-v2 | Continuous Env: Pendulum-v0 |
 | :---: | :---: | :---: |
