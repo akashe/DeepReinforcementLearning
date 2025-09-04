@@ -21,6 +21,13 @@
 | SAC | - | ![Pendulum-SAC](https://raw.githubusercontent.com/akashe/DeepReinforcementLearning/main/figures/SAC_Pendulum-v0_rewards.png) |
 | PPO | - | ![Pendulum-PPO](https://raw.githubusercontent.com/akashe/DeepReinforcementLearning/main/figures/PPO_Pendulum-v0_rewards.png) |
 
+#### Resources:
+1. [RL course by David Silver](https://www.youtube.com/watch?v=KHZVXao4qXs&list=PLqYmG7hTraZDM-OYHWgPebj2MfCFzFObQ&index=7)
+2. [Lecture slides for above course](https://www.davidsilver.uk/teaching/)
+3. [Spinning up by OpenAI](https://spinningup.openai.com)
+3. [More exhaustive RL guide by Deeny Britz](https://github.com/dennybritz/reinforcement-learning)
+
+
 #### Installation:
 
 **Prerequisites:**
@@ -78,13 +85,3 @@ python DQN.py           # Run DQN on LunarLander-v2
 python td3.py           # Run TD3 on Pendulum-v1
 python SoftActorCritic.py # Run SAC on Pendulum-v1
 ```
-
-#### Resources:
-1. [RL course by David Silver](https://www.youtube.com/watch?v=KHZVXao4qXs&list=PLqYmG7hTraZDM-OYHWgPebj2MfCFzFObQ&index=7)
-2. [Lecture slides for above course](https://www.davidsilver.uk/teaching/)
-3. [Spinning up by OpenAI](https://spinningup.openai.com)
-3. [More exhaustive RL guide by Deeny Britz](https://github.com/dennybritz/reinforcement-learning)
-
-#### Future projects:
-1. If time available I will add a simple program for elevator using RL.
-2. Better graphs
