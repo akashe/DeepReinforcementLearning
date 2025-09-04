@@ -17,7 +17,7 @@ Experiment and result:
 
 def td3():
     # Setting up environment
-    env_name = "Pendulum-v0"
+    env_name = "Pendulum-v1"
     env = gym.make(env_name)
     action_space = env.action_space.shape[0]
     action_space_low = env.action_space.low
@@ -85,7 +85,10 @@ def td3():
         game_reward = []
         rewards_list.append(avg_reward_this_game)
         print(f'For game number {i}, mean of last 100 rewards = {sum(score_deque)/100}')
-        env.close()
+        try:
+            env.close()
+        except:
+            pass
 
         if i > test_after:  # Test agent after certain number of training epochs
             for i_ in range(test_epochs):  # Run test by visualizing TODO: use reward instead of visualization
@@ -94,13 +97,19 @@ def td3():
                     done_ = False
                     j_ = 0
                     while (not done_) and j_ < test_steps:
-                        env.render()
+                        try:
+                            env.render()
+                        except:
+                            pass
                         # time.sleep(1e-3)
                         action = agent.take_action(observation_, add_noise_till + 1)
                         o_, _, done_, _ = env.step(action)
                         observation_ = o_
                         j += 1
-                    env.close()
+                    try:
+                        env.close()
+                    except:
+                        pass
 
     # Plotting avg rewards per game
     plt.figure(figsize=(8, 6))

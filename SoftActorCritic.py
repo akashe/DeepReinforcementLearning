@@ -16,7 +16,7 @@ converging! It took much more time than DDPG to reach low rewards.
 
 def sac():
     # Environment setup:
-    env_name = "Pendulum-v0" #MountainCarContinuous-v0
+    env_name = "Pendulum-v1" #MountainCarContinuous-v0
     env = gym.make(env_name)
     action_space = env.action_space.shape[0]
     action_space_low = env.action_space.low
@@ -81,7 +81,10 @@ def sac():
         avg_reward_this_game = sum(game_reward) / len(game_reward)
         rewards_list.append(avg_reward_this_game)
         print(f'For game number {i}, mean of last 100 rewards = {sum(score_deque) / 100}')
-        env.close()
+        try:
+            env.close()
+        except:
+            pass
 
         if i > test_after:
             for i_ in range(test_epochs):
@@ -89,11 +92,17 @@ def sac():
                 done = False
                 j_ = 0
                 while (not done) and j_<test_steps:
-                    env.render()
+                    try:
+                        env.render()
+                    except:
+                        pass
                     action,_ = agent.take_action(obs_,deterministic=True)
                     obs_,_,done,_ = env.step(action)
                     j += 1
-                env.close()
+                try:
+                    env.close()
+                except:
+                    pass
 
     # Plotting avg rewards per game
     plt.figure(figsize=(8, 6))

@@ -36,7 +36,7 @@ def ppo_clip(seed=1003):
     np.random.seed(seed)
 
     # Setting up Environment
-    env_name = "Pendulum-v0"
+    env_name = "Pendulum-v1"
     env = gym.make(env_name)
     action_space = env.action_space
     observation_space = env.observation_space
@@ -114,12 +114,18 @@ def ppo_clip(seed=1003):
             done = False
             j_ = 0
             while not (done or j_ > test_steps):
-                env.render()
+                try:
+                    env.render()
+                except:
+                    pass
                 time.sleep(1e-3)
                 action, _, _ = agent.take_action(torch.as_tensor(observation,dtype=torch.float32))
                 observation, _, done, _ = env.step(action)
                 j_ += 1
-            env.close()
+            try:
+                env.close()
+            except:
+                pass
 
 
 ppo_clip()

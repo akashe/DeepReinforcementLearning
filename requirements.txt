@@ -1,0 +1,5 @@
+torch==1.9.0
+gym[box2d]==0.21.0
+numpy==1.21.0
+matplotlib==3.5.0
+pyglet<2.0

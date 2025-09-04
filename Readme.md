@@ -21,9 +21,63 @@
 | SAC | - | ![Pendulum-SAC](https://raw.githubusercontent.com/akashe/DeepReinforcementLearning/main/figures/SAC_Pendulum-v0_rewards.png) |
 | PPO | - | ![Pendulum-PPO](https://raw.githubusercontent.com/akashe/DeepReinforcementLearning/main/figures/PPO_Pendulum-v0_rewards.png) |
 
+#### Installation:
+
+**Prerequisites:**
+- Python 3.8+ (3.8.10 recommended)
+- [pyenv](https://github.com/pyenv/pyenv) (optional but recommended)
+- [Homebrew](https://brew.sh/) (for macOS users)
+
+**Setup:**
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/akashe/DeepReinforcementLearning.git
+   cd DeepReinforcementLearning
+   ```
+
+2. **Set up Python environment:**
+   ```bash
+   # Option A: Using pyenv (recommended)
+   pyenv install 3.8.10
+   pyenv local 3.8.10
+   
+   # Option B: Using system Python 3.8+
+   # Make sure you have Python 3.8+ installed
+   ```
+
+3. **Install system dependencies (for Box2D environments like LunarLander):**
+   ```bash
+   # macOS:
+   brew install swig
+   
+   # Ubuntu/Debian:
+   sudo apt-get install swig
+   
+   # Other systems: install swig through your package manager
+   ```
+
+4. **Create and activate virtual environment:**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+5. **Install Python dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
 #### Usage:
 Just run the file/algorithm directly. There is no common structures between algorithms as I implemented them as I learnt them. 
 Different algorithms are inspired from different sources.
+
+**Examples:**
+```bash
+python ddpg.py          # Run DDPG on Pendulum-v1
+python DQN.py           # Run DQN on LunarLander-v2
+python td3.py           # Run TD3 on Pendulum-v1
+python SoftActorCritic.py # Run SAC on Pendulum-v1
+```
 
 #### Resources:
 1. [RL course by David Silver](https://www.youtube.com/watch?v=KHZVXao4qXs&list=PLqYmG7hTraZDM-OYHWgPebj2MfCFzFObQ&index=7)
